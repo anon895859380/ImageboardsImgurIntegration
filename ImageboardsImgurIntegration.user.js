@@ -6,6 +6,8 @@
 // @author       You
 // @match        *://bitardchan.rf.gd/*
 // @icon         https://s.imgur.com/images/favicon-152.png
+// @updateURL    https://github.com/anon895859380/ImageboardsImgurIntegration/raw/main/ImageboardsImgurIntegration.user.js
+// @downloadURL  https://github.com/anon895859380/ImageboardsImgurIntegration/raw/main/ImageboardsImgurIntegration.user.js
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
