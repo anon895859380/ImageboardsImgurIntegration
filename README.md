@@ -1,5 +1,5 @@
 # Imageboards Imgur Integration
-Интеграция Imgur для имиджборд, не умеющих в медиа или видео.
+Интеграция Imgur для имиджборд, не умеющих в полноценное медиа.
 
 ## Установка
 1. Установите расширение [Tampermonkey](https://www.tampermonkey.net/) или [Violentmonkey](https://violentmonkey.github.io/)
