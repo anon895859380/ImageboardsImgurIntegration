@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imageboards Imgur Integration
 // @namespace    ImageboardsImgurIntegration
-// @version      1.0
+// @version      1.1
 // @description  Imageboards Imgur Integration
 // @author       You
 // @match        *://bitardchan.rf.gd/*
@@ -108,6 +108,7 @@ function loadAttachments(post) {
 
     const urls = Array.from(post.querySelectorAll(board.url))
         .filter(i =>
+            attachmentUrlRegex.exec(i.href) &&
             attachmentUrlRegex.exec(i.href)[0].length == i.href.length &&
             i.previousSibling && i.nextSibling &&
             i.previousSibling.textContent.endsWith(attachmentOpen) &&
