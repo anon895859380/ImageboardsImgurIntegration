@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imageboards Imgur Integration
 // @namespace    ImageboardsImgurIntegration
-// @version      1.1
+// @version      1.2
 // @description  Imageboards Imgur Integration
 // @author       You
 // @match        *://bitardchan.rf.gd/*
@@ -140,12 +140,10 @@ function loadAttachment(element) {
     if (imageAttachments.includes(extension)) {
         const img = document.createElement('img');
         img.src = url;
-        img.width = config.attachmentWidth;
         attachmentContent.appendChild(img);
     }
     else if (videoAttachments.includes(extension)) {
         const video = createElement(`<video controls loop/>`);
-        video.width = config.attachmentWidth;
         if (!config.preloadVideos) video.preload = 'none';
         const source = document.createElement('source');
         source.src = url;
@@ -204,7 +202,7 @@ const configElementHtml = `
 <div id='iii-configWrapper' style='display: none;'>
     <div id='iii-config'>
         <label>Максимальное кол-во вложений <input id='iii-maxAttachmentCount' class='iii-small-input' type='number'/></label>
-        <label>Ширина вложения <input id='iii-attachmentWidth' class='iii-small-input' type='number'/></label>
+        <label>Размер вложения <input id='iii-attachmentWidth' class='iii-small-input' type='number'/></label>
         <label>Раскрывать вложения <input id='iii-openAttachmentsByDefault' type='checkbox'/></label>
         <label>Предзагрузка видео <input id='iii-preloadVideos' type='checkbox'/></label>
     </div>
@@ -217,6 +215,8 @@ GM_addStyle(`
 
 .iii-attachment-content > * {
  border: 1px solid #0004;
+ max-width: ${parseInt(config.attachmentWidth) ?? 400}px;
+ max-height: ${parseInt(config.attachmentWidth) ?? 400}px;
 }
 
 .iii-small-input {
