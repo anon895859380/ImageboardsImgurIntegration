@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imageboards Imgur Integration
 // @namespace    ImageboardsImgurIntegration
-// @version      1.2
+// @version      1.3
 // @description  Imageboards Imgur Integration
 // @author       You
 // @match        *://bitardchan.rf.gd/*
@@ -27,7 +27,7 @@ const videoAttachments = ['mp4', 'mov', 'avi', 'webm', 'mpeg', 'flv', 'mkv', 'mp
 
 const config = loadConfig();
 
-let dollchanInstalled;
+let pageInfo;
 let boards;
 let board;
 
@@ -42,18 +42,26 @@ function main() {
 }
 
 function initConstants() {
-    dollchanInstalled = document.body.classList.contains('de-runned');
-
+    pageInfo = {
+        dollchanInstalled: document.body.classList.contains('de-runned'),
+    };
     boards = {
         'bitardchan.rf.gd': {
-            threadElement: dollchanInstalled ? 'div[de-thread]' : 'div.posts',
+            threadElement: pageInfo.dollchanInstalled ? 'div[de-thread]' : 'div.posts',
             postElement: 'div.message',
             url: 'a[href]',
             uploadLinkContainer: 'table.postform',
+            boardRegex: /^\/\w+\/(\?.*|#.*)?$/,
+            threadRegex: /^\/\w+\/res\/\d+\.html(\?.*|#.*)?$/i,
         },
     };
 
     board = boards[window.location.hostname];
+
+    if (board) { Object.assign(pageInfo, {
+        isBoard: board.boardRegex.test(window.location.pathname),
+        isThread: board.threadRegex.test(window.location.pathname),
+    });}
 }
 
 function initConfig() {
@@ -68,8 +76,11 @@ function initConfig() {
     elements.attachmentWidth.value = config.attachmentWidth;
     elements.attachmentWidth.onchange = () => { config.attachmentWidth = elements.attachmentWidth.value; saveConfig(); };
 
-    elements.openAttachmentsByDefault.checked = config.openAttachmentsByDefault;
-    elements.openAttachmentsByDefault.onchange = () => { config.openAttachmentsByDefault = elements.openAttachmentsByDefault.checked; saveConfig(); };
+    elements.openAttachmentsByDefaultThread.checked = config.openAttachmentsByDefaultThread;
+    elements.openAttachmentsByDefaultThread.onchange = () => { config.openAttachmentsByDefaultThread = elements.openAttachmentsByDefaultThread.checked; saveConfig(); };
+
+    elements.openAttachmentsByDefaultBoard.checked = config.openAttachmentsByDefaultBoard;
+    elements.openAttachmentsByDefaultBoard.onchange = () => { config.openAttachmentsByDefaultBoard = elements.openAttachmentsByDefaultBoard.checked; saveConfig(); };
 
     elements.preloadVideos.checked = config.preloadVideos;
     elements.preloadVideos.onchange = () => { config.preloadVideos = elements.preloadVideos.checked; saveConfig(); };
@@ -91,12 +102,15 @@ function initAttachments() {
 }
 
 function loadConfig() {
-    return GM_getValue('config') || {
-        maxAttachmentCount: 10,
-        openAttachmentsByDefault: true,
-        preloadVideos: true,
-        attachmentWidth: 300,
-    };
+    let cfg = GM_getValue('config') || {};
+
+    cfg.maxAttachmentCount ??= 10;
+    cfg.openAttachmentsByDefaultBoard ??= true;
+    cfg.openAttachmentsByDefaultThread ??= true;
+    cfg.preloadVideos ??= true;
+    cfg.attachmentWidth ??= 300;
+
+    return cfg;
 }
 
 function saveConfig() {
@@ -158,7 +172,8 @@ function loadAttachment(element) {
     element.replaceWith(attachmentHeader);
     insertAfter(attachmentContent, attachmentHeader);
 
-    if (!config.openAttachmentsByDefault) attachmentContent.style.display = 'none';
+    if (!(pageInfo.isBoard && config.openAttachmentsByDefaultBoard ||
+          pageInfo.isThread && config.openAttachmentsByDefaultThread)) attachmentContent.style.display = 'none';
 }
 
 function escapeRegExp(string) {
@@ -203,7 +218,8 @@ const configElementHtml = `
     <div id='iii-config'>
         <label>Максимальное кол-во вложений <input id='iii-maxAttachmentCount' class='iii-small-input' type='number'/></label>
         <label>Размер вложения <input id='iii-attachmentWidth' class='iii-small-input' type='number'/></label>
-        <label>Раскрывать вложения <input id='iii-openAttachmentsByDefault' type='checkbox'/></label>
+        <label>Раскрывать вложения на досках <input id='iii-openAttachmentsByDefaultBoard' type='checkbox'/></label>
+        <label>Раскрывать вложения в тредах <input id='iii-openAttachmentsByDefaultThread' type='checkbox'/></label>
         <label>Предзагрузка видео <input id='iii-preloadVideos' type='checkbox'/></label>
     </div>
 </div>`;
