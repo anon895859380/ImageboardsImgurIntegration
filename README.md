@@ -11,4 +11,10 @@
 
      - При загрузке видео нажмите 'Yes, keep the audio' в диалоговом окне 'Do you want to keep the audio on these video files?'
 4. В правом верхнем углу медиа нажмите на кнопку '...', 'Get share links' и 'Copy link' под надписью 'BBCode (Forums)'
-5. Вставьте скопированный текст в форму для постинга
+
+     - Скопированный текст должен выглядеть примерно так: `[img]https://i.imgur.com/abCd123.mp4[/img]`
+6. Вставьте скопированный текст в форму для постинга
+
+## Обратная связь
+ - [Запросить добавление имиджборды в список поддерживаемых](https://github.com/anon895859380/ImageboardsImgurIntegration/discussions/1)
+ - [Скрипт работает с ошибками](https://github.com/anon895859380/ImageboardsImgurIntegration/issues/new)
