@@ -147,7 +147,7 @@ function loadAttachment(element) {
         createElement(`<a/>`, {textContent: '[Imgur вложение (' + extension + ')]', onclick: () => (attachmentContent.style.display = attachmentContent.style.display ? '' : 'none')}),
         createElement(`<a/>`, {textContent: ' [B]', title: 'Скопировать BBCode', onclick: () => copy(attachmentOpen + url + attachmentClose)}),
         createElement(`<a/>`, {textContent: ' [L]', title: 'Скопировать ссылку', onclick: () => copy(url)}),
-        createElement(`<a/>`, {textContent: ' [D]', title: 'Скачать', href: url, download: name, target: '_blank'}),
+        // createElement(`<a/>`, {textContent: ' [D]', title: 'Скачать', href: url, download: name, target: '_blank'}),
     ]);
 
     const attachmentContent = createElement(`<div class='iii-attachment-content'/>`);
