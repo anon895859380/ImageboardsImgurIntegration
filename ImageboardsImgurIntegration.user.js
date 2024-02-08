@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imageboards Imgur Integration
 // @namespace    ImageboardsImgurIntegration
-// @version      1.3
+// @version      1.4
 // @description  Imageboards Imgur Integration
 // @author       You
 // @match        *://bitardchan.rf.gd/*
@@ -134,6 +134,7 @@ function loadAttachments(post) {
 
 function loadAttachment(element) {
     const url = element.href;
+    const name = url.split('/').pop();
     const extension = url.split('.').pop();
 
     element.previousSibling.textContent = element.previousSibling.textContent.substring(0, element.previousSibling.textContent.length - attachmentOpen.length);
@@ -142,27 +143,22 @@ function loadAttachment(element) {
     if (!element.previousSibling.textContent.endsWith('\n')) insertBefore(document.createElement('br'), element);
     if (!element.nextSibling.textContent.startsWith('\n')) insertAfter(document.createElement('br'), element);
 
-    const attachmentHeader = document.createElement('a');
-    attachmentHeader.textContent = '[Imgur вложение (' + extension + ')]';
-    attachmentHeader.classList.add('iii-attachment');
+    const attachmentHeader = createElement(`<div class='iii-attachment'/>`, null, [
+        createElement(`<a/>`, {textContent: '[Imgur вложение (' + extension + ')]', onclick: () => (attachmentContent.style.display = attachmentContent.style.display ? '' : 'none')}),
+        createElement(`<a/>`, {textContent: ' [B]', title: 'Скопировать BBCode', onclick: () => copy(attachmentOpen + url + attachmentClose)}),
+        createElement(`<a/>`, {textContent: ' [L]', title: 'Скопировать ссылку', onclick: () => copy(url)}),
+        createElement(`<a/>`, {textContent: ' [D]', title: 'Скачать', href: url, download: name, target: '_blank'}),
+    ]);
 
-    const attachmentContent = document.createElement('div');
-    attachmentContent.classList.add('iii-attachment-content');
-
-    attachmentHeader.onclick = () => (attachmentContent.style.display = attachmentContent.style.display ? '' : 'none');
+    const attachmentContent = createElement(`<div class='iii-attachment-content'/>`);
 
     if (imageAttachments.includes(extension)) {
-        const img = document.createElement('img');
-        img.src = url;
+        const img = createElement(`<img/>`, {src: url});
         attachmentContent.appendChild(img);
     }
     else if (videoAttachments.includes(extension)) {
-        const video = createElement(`<video controls loop/>`);
+        const video = createElement(`<video controls loop/>`, null, [createElement(`<source/>`, {src: url, type: 'video/' + extension})]);
         if (!config.preloadVideos) video.preload = 'none';
-        const source = document.createElement('source');
-        source.src = url;
-        source.type = 'video/' + extension;
-        video.appendChild(source);
         attachmentContent.appendChild(video);
     }
     else {
@@ -198,10 +194,13 @@ function registerObserver(element, query, callback) {
     }).observe(element, { childList: true });
 }
 
-function createElement(html) {
+function createElement(html, safeAssign, children) {
     const container = document.createElement('div');
     container.innerHTML = html.trim();
-    return container.childNodes[0];
+    const element = container.childNodes[0];
+    if (safeAssign) Object.assign(element, safeAssign);
+    if (children) children.forEach(i => element.appendChild(i));
+    return element;
 }
 
 function addElements(e) {
@@ -211,6 +210,10 @@ function addElements(e) {
 
 function addElement(e) {
     if (e && e.id) elements[e.id.startsWith(scriptPrefix) ? e.id.substring(scriptPrefix.length) : e.id] = e;
+}
+
+function copy(text) {
+    navigator.clipboard.writeText(text).then(null, err => alert('Ошибка копирования: ' + err));
 }
 
 const configElementHtml = `
@@ -282,4 +285,4 @@ GM_addStyle(`
 }
 `);
 
-setTimeout(main, 500);
+setTimeout(main, 100);
