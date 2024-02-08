@@ -76,6 +76,9 @@ function initConfig() {
     elements.attachmentWidth.value = config.attachmentWidth;
     elements.attachmentWidth.onchange = () => { config.attachmentWidth = elements.attachmentWidth.value; saveConfig(); };
 
+    elements.attachmentHeight.value = config.attachmentHeight;
+    elements.attachmentHeight.onchange = () => { config.attachmentHeight = elements.attachmentHeight.value; saveConfig(); };
+
     elements.openAttachmentsByDefaultThread.checked = config.openAttachmentsByDefaultThread;
     elements.openAttachmentsByDefaultThread.onchange = () => { config.openAttachmentsByDefaultThread = elements.openAttachmentsByDefaultThread.checked; saveConfig(); };
 
@@ -108,7 +111,8 @@ function loadConfig() {
     cfg.openAttachmentsByDefaultBoard ??= true;
     cfg.openAttachmentsByDefaultThread ??= true;
     cfg.preloadVideos ??= true;
-    cfg.attachmentWidth ??= 300;
+    cfg.attachmentWidth ??= 450;
+    cfg.attachmentHeight ??= 300;
 
     return cfg;
 }
@@ -220,7 +224,8 @@ const configElementHtml = `
 <div id='iii-configWrapper' style='display: none;'>
     <div id='iii-config'>
         <label>Максимальное кол-во вложений <input id='iii-maxAttachmentCount' class='iii-small-input' type='number'/></label>
-        <label>Размер вложения <input id='iii-attachmentWidth' class='iii-small-input' type='number'/></label>
+        <label>Ширина вложения <input id='iii-attachmentWidth' class='iii-small-input' type='number'/></label>
+        <label>Высота вложения <input id='iii-attachmentHeight' class='iii-small-input' type='number'/></label>
         <label>Раскрывать вложения на досках <input id='iii-openAttachmentsByDefaultBoard' type='checkbox'/></label>
         <label>Раскрывать вложения в тредах <input id='iii-openAttachmentsByDefaultThread' type='checkbox'/></label>
         <label>Предзагрузка видео <input id='iii-preloadVideos' type='checkbox'/></label>
@@ -234,8 +239,8 @@ GM_addStyle(`
 
 .iii-attachment-content > * {
  border: 1px solid #0004;
- max-width: ${parseInt(config.attachmentWidth) ?? 400}px;
- max-height: ${parseInt(config.attachmentWidth) ?? 400}px;
+ max-width: ${parseInt(config.attachmentWidth) ?? 300}px;
+ max-height: ${parseInt(config.attachmentHeight) ?? 450}px;
 }
 
 .iii-small-input {
