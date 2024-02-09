@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imageboards Imgur Integration
 // @namespace    ImageboardsImgurIntegration
-// @version      1.5
+// @version      1.6
 // @description  Imageboards Imgur Integration
 // @author       You
 // @match        *://bitardchan.rf.gd/*
@@ -11,6 +11,9 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @connect      cdn.imgchest.com
+// @connect      i.imgur.com
 // ==/UserScript==
 
 const scriptPrefix = 'iii-';
@@ -21,7 +24,7 @@ const tagsRemovingRegexes = {
     begin: /\[img\]$/,
     end: /^\[\/img\]/
 };
-const attachmentUrlRegex = /^https:\/\/(cdn.imgchest.com\/files|i\.imgur\.com)\/\w+\.(jpe?g|a?png|gif|tiff?|bmp|xcf|webp|mp4|mov|avi|webm|mpeg|flv|mkv|mpv|wmv)($|(?=\[\/img\]$))/i;
+const attachmentUrlRegex = /^https:\/\/(cdn\.imgchest\.com\/files|i\.imgur\.com)\/\w+\.(jpe?g|a?png|gif|tiff?|bmp|xcf|webp|mp4|mov|avi|webm|mpeg|flv|mkv|mpv|wmv)($|(?=\[\/img\]$))/i;
 
 const imageAttachments = ['jpg', 'jpeg', 'png', 'gif', 'apng', 'tiff', 'tif', 'bmp', 'xcf', 'webp'];
 const videoAttachments = ['mp4', 'mov', 'avi', 'webm', 'mpeg', 'flv', 'mkv', 'mpv', 'wmv'];
@@ -151,6 +154,7 @@ function loadAttachment(attachment) {
     const attachmentHeader = createElement(`<div class='iii-attachment'/>`, null, [
         createElement(`<a/>`, {textContent: '[Вложение (' + extension + ')]', onclick: () => (attachmentContent.style.display = attachmentContent.style.display ? '' : 'none')}),
         createElement(`<a/>`, {textContent: ' [L]', title: 'Скопировать ссылку', onclick: () => copy(url)}),
+        createElement(`<a/>`, {textContent: ' [D]', title: 'Скачать', onclick: e => processAttachmentDownload(url, e.originalTarget)}),
     ]);
 
     const attachmentContent = createElement(`<div class='iii-attachment-content'/>`);
@@ -223,6 +227,42 @@ function copy(text) {
 function match(str, regex) {
     const match = regex.exec(str);
     return match ? match[0] : null;
+}
+
+function processAttachmentDownload(url, element) {
+    const prevOnclick = element.onclick;
+    const prevTextContent = element.textContent;
+
+    const resetElement = () => {
+        element.onclick = prevOnclick;
+        element.textContent = prevTextContent;
+    };
+
+    element.onclick = null;
+    element.textContent = ' [Загрузка...]'
+
+    GM_xmlhttpRequest({
+        url: url,
+        anonymous: true,
+        responseType: 'blob',
+        onload: r => {
+            resetElement();
+            saveResponse(r, url.split('/').pop());
+        },
+        onerror: r => {
+            resetElement();
+            alert('Ошибка загрузки');
+        },
+        onabort: resetElement,
+    });
+}
+
+function saveResponse(res, name) {
+    if (res.status !== 200) return;
+    const blob = new Blob([res.response], {type: res.response.type});
+    const url = URL.createObjectURL(blob);
+    const a = createElement(`<a/>`, {href: url, target: '_blank', download: name});
+    a.click();
 }
 
 const configElementHtml = `
