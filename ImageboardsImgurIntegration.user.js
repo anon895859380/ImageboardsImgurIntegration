@@ -110,7 +110,7 @@ function loadConfig() {
     let cfg = GM_getValue('config') || {};
 
     cfg.maxAttachmentCount ??= 10;
-    cfg.openAttachmentsByDefaultBoard ??= true;
+    cfg.openAttachmentsByDefaultBoard ??= false;
     cfg.openAttachmentsByDefaultThread ??= true;
     cfg.preloadVideos ??= true;
     cfg.attachmentWidth ??= 450;
