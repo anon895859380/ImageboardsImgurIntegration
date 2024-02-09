@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imageboards Imgur Integration
 // @namespace    ImageboardsImgurIntegration
-// @version      1.4
+// @version      1.5
 // @description  Imageboards Imgur Integration
 // @author       You
 // @match        *://bitardchan.rf.gd/*
@@ -17,13 +17,15 @@ const scriptPrefix = 'iii-';
 
 const elements = {};
 
-const attachmentOpen = "[img]";
-const attachmentClose = "[/img]";
-const attachmentUrlRegex = /https:\/\/i\.imgur\.com\/\w+\.(jpe?g|a?png|gif|tiff?|bmp|xcf|webp|mp4|mov|avi|webm|mpeg|flv|mkv|mpv|wmv)/;
-const attachmentDetectionRegex = new RegExp(escapeRegExp(attachmentOpen) + attachmentUrlRegex.source + escapeRegExp(attachmentClose));
+const tagsRemovingRegexes = {
+    begin: /\[img\]$/,
+    end: /^\[\/img\]/
+};
+const attachmentUrlRegex = /^https:\/\/(cdn.imgchest.com\/files|i\.imgur\.com)\/\w+\.(jpe?g|a?png|gif|tiff?|bmp|xcf|webp|mp4|mov|avi|webm|mpeg|flv|mkv|mpv|wmv)($|(?=\[\/img\]$))/i;
 
 const imageAttachments = ['jpg', 'jpeg', 'png', 'gif', 'apng', 'tiff', 'tif', 'bmp', 'xcf', 'webp'];
 const videoAttachments = ['mp4', 'mov', 'avi', 'webm', 'mpeg', 'flv', 'mkv', 'mpv', 'wmv'];
+const uploadUrls = {'Image chest': 'https://imgchest.com/upload', 'Imgur': 'https://imgur.com/upload'};
 
 const config = loadConfig();
 
@@ -37,7 +39,7 @@ function main() {
     if (!board) return;
 
     initConfig();
-    initUploadLink();
+    initUploadLinks();
     initAttachments();
 }
 
@@ -47,7 +49,7 @@ function initConstants() {
     };
     boards = {
         'bitardchan.rf.gd': {
-            threadElement: pageInfo.dollchanInstalled ? 'div[de-thread]' : 'div.posts',
+            autoupdateElements: 'form#delform',
             postElement: 'div.message',
             url: 'a[href]',
             uploadLinkContainer: 'table.postform',
@@ -92,14 +94,14 @@ function initConfig() {
     document.body.appendChild(elements.configWrapper);
 }
 
-function initUploadLink() {
+function initUploadLinks() {
     const container = document.querySelector(board.uploadLinkContainer);
-    if (container) container.appendChild(createElement(`<a class='iii-imgur-upload' href='https://imgur.com/upload' target='_blank'>Загрузить медиа в Imgur</a>`));
+    if (container) Object.keys(uploadUrls).map(i => createElement(`<a class='iii-upload-url' target='_blank'/>`, {textContent: '[' + i + '] ', href: uploadUrls[i]})).forEach(i => container.appendChild(i));
 }
 
 function initAttachments() {
-    const thread = document.querySelector(board.threadElement);
-    if (thread) registerObserver(thread, board.postElement, i => i.forEach(loadAttachments));
+    const autoupdates = document.querySelectorAll(board.autoupdateElements);
+    if (autoupdates.length) registerObservers(autoupdates, board.postElement, i => i.forEach(loadAttachments));
     const posts = document.querySelectorAll(board.postElement);
     posts.forEach(loadAttachments);
 }
@@ -122,36 +124,33 @@ function saveConfig() {
 }
 
 function loadAttachments(post) {
-    if (!attachmentDetectionRegex.test(post.textContent)) return;
-
     const urls = Array.from(post.querySelectorAll(board.url))
-        .filter(i =>
-            attachmentUrlRegex.exec(i.href) &&
-            attachmentUrlRegex.exec(i.href)[0].length == i.href.length &&
-            i.previousSibling && i.nextSibling &&
-            i.previousSibling.textContent.endsWith(attachmentOpen) &&
-            i.nextSibling.textContent.startsWith(attachmentClose)
-        )
+        .map(e => ({element: e, url: match(e.href, attachmentUrlRegex)}))
+        .filter(a => a.url)
         .slice(0, config.maxAttachmentCount);
     urls.forEach(loadAttachment);
 }
 
-function loadAttachment(element) {
-    const url = element.href;
-    const name = url.split('/').pop();
+function loadAttachment(attachment) {
+    const element = attachment.element;
+    const url = attachment.url;
     const extension = url.split('.').pop();
 
-    element.previousSibling.textContent = element.previousSibling.textContent.substring(0, element.previousSibling.textContent.length - attachmentOpen.length);
-    element.nextSibling.textContent = element.nextSibling.textContent.substring(attachmentClose.length);
+    element.previousSibling.textContent = element.previousSibling.textContent.replace(tagsRemovingRegexes.begin, '').trimEnd();
+    element.nextSibling.textContent = element.nextSibling.textContent.replace(tagsRemovingRegexes.end, '').trimStart();
 
-    if (!element.previousSibling.textContent.endsWith('\n')) insertBefore(document.createElement('br'), element);
-    if (!element.nextSibling.textContent.startsWith('\n')) insertAfter(document.createElement('br'), element);
+    if (element.previousSibling.nodeType == Node.TEXT_NODE && !element.previousSibling.textContent) element.previousSibling.remove();
+    if (element.nextSibling.nodeType == Node.TEXT_NODE && !element.nextSibling.textContent) element.nextSibling.remove();
+
+    /*element.previousSibling.textContent = element.previousSibling.textContent.substring(0, element.previousSibling.textContent.length - attachmentOpen.length);
+    element.nextSibling.textContent = element.nextSibling.textContent.substring(attachmentClose.length);*/
+
+    if (element.previousSibling && element.previousSibling.tagName != 'BR') insertBefore(document.createElement('br'), element);
+    if (element.nextSibling && element.nextSibling.tagName != 'BR') insertAfter(document.createElement('br'), element);
 
     const attachmentHeader = createElement(`<div class='iii-attachment'/>`, null, [
-        createElement(`<a/>`, {textContent: '[Imgur вложение (' + extension + ')]', onclick: () => (attachmentContent.style.display = attachmentContent.style.display ? '' : 'none')}),
-        createElement(`<a/>`, {textContent: ' [B]', title: 'Скопировать BBCode', onclick: () => copy(attachmentOpen + url + attachmentClose)}),
+        createElement(`<a/>`, {textContent: '[Вложение (' + extension + ')]', onclick: () => (attachmentContent.style.display = attachmentContent.style.display ? '' : 'none')}),
         createElement(`<a/>`, {textContent: ' [L]', title: 'Скопировать ссылку', onclick: () => copy(url)}),
-        // createElement(`<a/>`, {textContent: ' [D]', title: 'Скачать', href: url, download: name, target: '_blank'}),
     ]);
 
     const attachmentContent = createElement(`<div class='iii-attachment-content'/>`);
@@ -188,14 +187,15 @@ function insertBefore(newNode, referenceNode) {
     referenceNode.parentNode.insertBefore(newNode, referenceNode);
 }
 
-function registerObserver(element, query, callback) {
-    new MutationObserver((l, o) => {
+function registerObservers(elements, query, callback) {
+    const observer = new MutationObserver((l, o) => {
         let nodes = new Set();
 
-        for (const record of l) for (const node of record.addedNodes) for (const subnode of element.querySelectorAll(query)) nodes.add(subnode);
+        for (const record of l) for (const node of record.addedNodes) for (const subnode of (node.parentNode ? node.parentNode : node).querySelectorAll(query)) nodes.add(subnode);
 
         if (nodes.size) callback(Array.from(nodes));
-    }).observe(element, { childList: true });
+    });
+    elements.forEach(i => observer.observe(i, { childList: true, subtree: true }));
 }
 
 function createElement(html, safeAssign, children) {
@@ -218,6 +218,11 @@ function addElement(e) {
 
 function copy(text) {
     navigator.clipboard.writeText(text).then(null, err => alert('Ошибка копирования: ' + err));
+}
+
+function match(str, regex) {
+    const match = regex.exec(str);
+    return match ? match[0] : null;
 }
 
 const configElementHtml = `
@@ -247,7 +252,7 @@ GM_addStyle(`
  width: 50px;
 }
 
-.iii-imgur-upload {
+.iii-upload-url {
  font-size: 12px;
 }
 
